@@ -10,7 +10,7 @@ from stream_graph import create_streamgraph
 from bubble_timeline import create_bubble_timeline
 
 # Load dataset
-df = pd.read_csv('weather_forecast_data_realtime.csv')
+df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/weather_forecast_data_realtime.csv')
 df['date'] = pd.to_datetime(df['date'])
 
 # Initialize the app
