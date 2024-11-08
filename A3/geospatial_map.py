@@ -1,8 +1,7 @@
-# weather.py
 import pandas as pd
 import plotly.graph_objs as go
 
-# Define regions' coordinates for map visualization
+# Define regions' coordinates for PM2.5 map visualization
 region_coordinates = {
     'East': {'lat': 1.35735, 'lon': 103.94},
     'West': {'lat': 1.352083, 'lon': 103.7},
@@ -11,25 +10,15 @@ region_coordinates = {
     'Central': {'lat': 1.3521, 'lon': 103.8198}
 }
 
-def create_geospatial_map(df, time_range):
-    # Get the current date to filter data
-    today = df['date'].max().normalize()
+def create_geospatial_map(df, rainfall_df, selected_date):
+    # Filter the dataset for the specific date
+    filtered_df = df[df['date'] == selected_date]
+    filtered_rainfall_df = rainfall_df[rainfall_df['date'] == selected_date]
     
-    # Filter the dataset based on the selected time range
-    if time_range == 'today':
-        filtered_df = df[df['date'] == today]
-    elif time_range == 'yesterday':
-        filtered_df = df[df['date'] == today - pd.Timedelta(days=1)]
-    elif time_range == 'day_before_yesterday':
-        filtered_df = df[df['date'] == today - pd.Timedelta(days=2)]
-    else:
-        filtered_df = df  # Default fallback if time range is invalid or unspecified
-    
-    # Return an empty figure if there's no data for the selected time range
-    if filtered_df.empty:
+    # Return an empty figure if there's no data for the selected day
+    if filtered_df.empty or filtered_rainfall_df.empty:
         return go.Figure()
 
-    # Calculate PM2.5 average values for each region
     pm25_values = [
         filtered_df['pm25_east'].mean(),
         filtered_df['pm25_west'].mean(),
@@ -38,47 +27,67 @@ def create_geospatial_map(df, time_range):
         filtered_df['pm25_central'].mean()
     ]
     
-    # Gather additional data for hover information
-    wind_speed = filtered_df['wind_speed_high'].mean()  # Average wind speed
-    wind_direction = filtered_df['wind_direction'].mode()[0]  # Most common wind direction
-    forecast = filtered_df['forecast'].mode()[0]  # Most common forecast
-    
-    # Define Scattermapbox trace for PM2.5 levels, color-coded by intensity
+    # Define the PM2.5 and rainfall traces as before
     pm25_trace = go.Scattermapbox(
         lat=[coords['lat'] for coords in region_coordinates.values()],
         lon=[coords['lon'] for coords in region_coordinates.values()],
         mode='markers',
         marker=dict(
-            size=20,
-            color=pm25_values,
-            colorscale='Picnic',  # Color scale for PM2.5 intensity
-            cmin=min(pm25_values),
-            cmax=max(pm25_values),
+            size=[value for value in pm25_values],  
+            color='red',
+            opacity=1.0
+        ),
+        text=[f'Region: {region}<br>PM2.5: {pm25_values[idx]:.2f}' 
+              for idx, region in enumerate(region_coordinates.keys())],
+        hoverinfo='text',
+        name='PM2.5'
+    )
+    
+    link_traces = []
+    for _, station in filtered_rainfall_df.iterrows():
+        if station['rainfall_value'] > 0:
+            for region_name, region_coord in region_coordinates.items():
+                link_trace = go.Scattermapbox(
+                    lat=[station['latitude'], region_coord['lat'], None],
+                    lon=[station['longitude'], region_coord['lon'], None],
+                    mode='lines',
+                    line=dict(width=station['rainfall_value'], color='green'),
+                    opacity=0.2,
+                    showlegend=False
+                )
+                link_traces.append(link_trace)
+
+    rainfall_trace = go.Scattermapbox(
+        lat=filtered_rainfall_df['latitude'],
+        lon=filtered_rainfall_df['longitude'],
+        mode='markers',
+        marker=dict(
+            size=10,
+            color=filtered_rainfall_df['rainfall_value'],
+            colorscale='Viridis_r',
+            cmin=0,
+            cmax=filtered_rainfall_df['rainfall_value'].max(),
             showscale=True,
-            colorbar=dict(title="PM2.5 Levels", x=1.05)
+            colorbar=dict(title="Rainfall (mm)", x=1.1)
         ),
-        text=[
-            f'Region: {region}<br>'
-            f'PM2.5: {pm25_values[idx]:.2f}<br>'
-            f'Wind Speed: {wind_speed:.2f} km/h<br>'
-            f'Wind Direction: {wind_direction}<br>'
-            f'Forecast: {forecast}'
-            for idx, region in enumerate(region_coordinates.keys())
-        ],  # Additional data for hover information
-        hoverinfo='text'
+        text=[f'Station: {row["station_name"]}<br>Rainfall: {row["rainfall_value"]:.2f} mm'
+              for _, row in filtered_rainfall_df.iterrows()],
+        hoverinfo='text',
+        name='Rainfall'
     )
-    
-    # Configure layout for the map
+
+    # Configure layout
     layout = go.Layout(
-        title='PM2.5 Levels with Wind and Forecast Info (Hover to View)',
+        title=f'PM2.5 and Rainfall Levels for {selected_date.date()}',
         mapbox=dict(
-            style="carto-positron",  # Map style
-            center=dict(lat=1.3521, lon=103.8198),  # Center on Singapore
-            zoom=10,  # Set zoom level
+            style="carto-positron",
+            center=dict(lat=1.3521, lon=103.8198),
+            zoom=10.5,
         ),
-        margin=dict(t=30, b=30, l=0, r=0),  # Adjust margins
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)  # Legend position
+        margin=dict(t=30, b=30, l=0, r=0),
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
     )
-    
-    # Return the complete figure
-    return go.Figure(data=[pm25_trace], layout=layout)
+
+    # Combine traces into a single figure
+    fig = go.Figure(data=link_traces + [pm25_trace, rainfall_trace], layout=layout)
+    return fig
