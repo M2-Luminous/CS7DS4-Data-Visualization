@@ -68,7 +68,7 @@ def create_geospatial_map(df, rainfall_df, selected_date):
             cmin=0,
             cmax=filtered_rainfall_df['rainfall_value'].max(),
             showscale=True,
-            colorbar=dict(title="Rainfall (mm)", x=1.1)
+            colorbar=dict(title="Rainfall", x=0.9)
         ),
         text=[f'Station: {row["station_name"]}<br>Rainfall: {row["rainfall_value"]:.2f} mm'
               for _, row in filtered_rainfall_df.iterrows()],
@@ -76,16 +76,20 @@ def create_geospatial_map(df, rainfall_df, selected_date):
         name='Rainfall'
     )
 
-    # Configure layout
+    # Configure layout with legend at the top
     layout = go.Layout(
-        title=f'PM2.5 and Rainfall Levels for {selected_date.date()}',
+        title=dict(
+        text=f'PM2.5 and Rainfall Levels for {selected_date.date()}',
+        y=0.1  ,  
+        font=dict(size=14)
+    ),
         mapbox=dict(
             style="carto-positron",
             center=dict(lat=1.3521, lon=103.8198),
             zoom=10.5,
         ),
         margin=dict(t=30, b=30, l=0, r=0),
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01)
+        legend=dict(orientation="h", yanchor="bottom", y=0.9, xanchor="center", x=0.1)
     )
 
     # Combine traces into a single figure

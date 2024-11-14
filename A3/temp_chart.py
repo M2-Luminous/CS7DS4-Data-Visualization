@@ -2,16 +2,9 @@
 import pandas as pd
 import plotly.graph_objs as go
 
-def create_temp_trend_charts(df, time_range):
-    # Filter dataset based on time range
-    if time_range == 'week':
-        filtered_df = df[df['date'] >= df['date'].max() - pd.Timedelta(weeks=1)]
-    elif time_range == 'month':
-        filtered_df = df[df['date'] >= df['date'].max() - pd.DateOffset(months=1)]
-    elif time_range == 'year':
-        filtered_df = df[df['date'] >= df['date'].max() - pd.DateOffset(years=1)]
-    else:
-        filtered_df = df  # Full dataset
+def create_temp_trend_charts(df):
+    # Filter dataset to show only data from the last month
+    filtered_df = df[df['date'] >= df['date'].max() - pd.DateOffset(months=1)]
 
     # Temperature chart
     trace_temp_high = go.Scatter(
@@ -28,10 +21,9 @@ def create_temp_trend_charts(df, time_range):
         yaxis='y2'
     )
     temp_layout = go.Layout(
-        title='Temperature Trends',
-        xaxis=dict(title='Date'),
         yaxis=dict(title='High Temp (°C)', titlefont=dict(color='firebrick')),
         yaxis2=dict(title='Low Temp (°C)', titlefont=dict(color='royalblue'), overlaying='y', side='right'),
+        legend=dict(x=0.80, y=0.98),
         hovermode='x unified'
     )
 
@@ -50,10 +42,9 @@ def create_temp_trend_charts(df, time_range):
         yaxis='y2'
     )
     humidity_layout = go.Layout(
-        title='Humidity Trends',
-        xaxis=dict(title='Date'),
         yaxis=dict(title='High Humidity (%)', titlefont=dict(color='green')),
         yaxis2=dict(title='Low Humidity (%)', titlefont=dict(color='blue'), overlaying='y', side='right'),
+        legend=dict(x=0.76, y=0.98),
         hovermode='x unified'
     )
 
@@ -72,10 +63,9 @@ def create_temp_trend_charts(df, time_range):
         yaxis='y2'
     )
     wind_layout = go.Layout(
-        title='Wind Speed Trends',
-        xaxis=dict(title='Date'),
         yaxis=dict(title='High Wind Speed (km/h)', titlefont=dict(color='orange')),
         yaxis2=dict(title='Low Wind Speed (km/h)', titlefont=dict(color='purple'), overlaying='y', side='right'),
+        legend=dict(x=0.72, y=0.98),
         hovermode='x unified'
     )
 

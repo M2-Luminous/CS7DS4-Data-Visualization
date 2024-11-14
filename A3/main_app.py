@@ -1,149 +1,100 @@
-# main_app.py
 import pandas as pd
 from dash import Dash, dcc, html, Input, Output
-from temp_chart import create_temp_trend_charts
-from wind_rose_chart import create_wind_rose_chart
-from scatter_matrix import create_scatter_matrix
+import dash_bootstrap_components as dbc
 from geospatial_map import create_geospatial_map
-from stream_graph import create_streamgraph
-from bubble_timeline import create_bubble_timeline
+from temp_chart import create_temp_trend_charts
 
-# Load the weather dataset
+# Load datasets
 df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/weather_forecast_data_realtime.csv')
 df['date'] = pd.to_datetime(df['date'])
-
-# Load the rainfall dataset
 rainfall_df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/max_rainfall.csv')
 rainfall_df['date'] = pd.to_datetime(rainfall_df['date'])
 
 # Initialize the app
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-# Define layout of the app
-app.layout = html.Div([
-    html.H1("Singapore Weather Dashboard"),
+# Create the initial figures for the temp, humidity, and wind charts
+temp_fig, humidity_fig, wind_fig = create_temp_trend_charts(df)
 
-    # Dropdown to select different chart views
-    dcc.Dropdown(
-        id='view_selector',
-        options=[
-            {'label': 'Temperature, Humidity, and Wind Speed Trends', 'value': 'trends'},
-            {'label': 'Wind Rose Chart', 'value': 'wind_rose'},
-            {'label': 'Scatter Matrix', 'value': 'scatter_matrix'},
-            {'label': 'Geospatial Map', 'value': 'geospatial_map'},
-            {'label': 'Stream Graph', 'value': 'stream_graph'},
-            {'label': 'Bubble Timeline', 'value': 'bubble_timeline'}
-        ],
-        value='trends',
-        style={'width': '70%', 'margin-bottom': '20px'}
-    ),
+# Layout of the app
+app.layout = dbc.Container([
+    # html.H1("Singapore Weather Dashboard", style={'textAlign': 'center'}),
+    
+    # Dropdown menu for selecting the chart type
+    dbc.Row([
+        dbc.Col([
+            dcc.Dropdown(
+                id="chart_selector",
+                options=[
+                    {'label': 'Temperature', 'value': 'temperature'},
+                    {'label': 'Humidity', 'value': 'humidity'},
+                    {'label': 'Wind Speed', 'value': 'wind'}
+                ],
+                value='temperature',  # Default selection
+                clearable=False,
+                style={'width': '50%'}  # Adjust width or position as needed
+            )
+        ], width=6)
+    ], style={'margin-top': '10px'}),  # Reduce margin-top to bring it closer to H1 title
+    
+    # Placeholder for the selected chart
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id='temp_trend_chart', figure=temp_fig)  # Display the initial temperature chart
+        ], width=6)
+    ], style={'margin-top': '0px', 'height': '60vh'}),  # Reduce margin-top to shift it higher
 
-    # Dropdown for selecting time range, shown only for views that need it
-    dcc.Dropdown(id='time_range', style={'width': '50%', 'margin-bottom': '20px'}),
+    # Day slider positioned above the geospatial map
+    dbc.Row([
+        dbc.Col([
+            dcc.Slider(
+                id='day_slider',
+                min=0,
+                max=29,
+                value=0,
+                step=1,
+                included=False,
+                updatemode='drag',
+                tooltip={"placement": "bottom", "always_visible": True}
+            ),
+        ], width=6, style={'margin-bottom': '0px'})  # Slightly increase margin-bottom to bring it closer to the map
+    ], style={'margin-top': '0px'}),  # Reduce margin-top to bring it closer to temp chart
+    
+    # Geospatial map positioned at the bottom left
+    dbc.Row([
+        dbc.Col([
+            dcc.Graph(id='geospatial_map_chart'),
+        ], width=6)
+    ], style={'height': '50vh'})  # Adjust height as needed for the map
+], fluid=True)
 
-    html.Div(
-        dcc.Slider(
-            id='day_slider',
-            min=0,
-            max=29,
-            value=0,  # Default to the most recent day
-            marks={i: f'{i}d ago' if i > 0 else 'Today' for i in range(30)},
-            step=1,
-            included=False,
-            updatemode='drag'
-        ),
-        style={'width': '90%'}  # Apply width to the div container
-    ),
-
-    # Placeholder for dynamic content
-    html.Div(id='dynamic_chart_container'),
-])
-
-# Callback to update time range dropdown options based on selected view
+# Callback to update the displayed trend chart based on dropdown selection
 @app.callback(
-    Output('time_range', 'options'),
-    Output('time_range', 'value'),
-    Output('time_range', 'style'),
-    Output('day_slider', 'style'),
-    Input('view_selector', 'value')
+    Output('temp_trend_chart', 'figure'),
+    Input('chart_selector', 'value')
 )
-def update_time_range_selector(view_selector):
-    # Define time range options for each type of chart
-    if view_selector in ['trends', 'scatter_matrix', 'bubble_timeline']:
-        options = [
-            {'label': 'Most Recent Week', 'value': 'week'},
-            {'label': 'Most Recent Month', 'value': 'month'},
-            {'label': 'Most Recent Year', 'value': 'year'},
-            {'label': 'Full Dataset', 'value': 'full'}
-        ]
-        time_range_style = {'width': '50%', 'margin-bottom': '20px'}
-        day_slider_style = {'display': 'none'}
-    elif view_selector == 'wind_rose':
-        options = [
-            {'label': 'Most Recent Week 1', 'value': 'week1'},
-            {'label': 'Most Recent Week 2', 'value': 'week2'},
-            {'label': 'Most Recent Week 3', 'value': 'week3'},
-            {'label': 'Full Dataset', 'value': 'full'}
-        ]
-        time_range_style = {'width': '50%', 'margin-bottom': '20px'}
-        day_slider_style = {'display': 'none'}
-    elif view_selector == 'stream_graph':
-        options = [
-            {'label': 'Most Recent Month', 'value': 'month'},
-            {'label': 'Most Recent Year', 'value': 'year'},
-            {'label': 'Full Dataset', 'value': 'full'}
-        ]
-        time_range_style = {'width': '50%', 'margin-bottom': '20px'}
-        day_slider_style = {'display': 'none'}
-    elif view_selector == 'geospatial_map':
-        options = [
-            {'label': 'Today', 'value': 'today'},
-            {'label': 'Yesterday', 'value': 'yesterday'},
-            {'label': 'The Day Before Yesterday', 'value': 'day_before_yesterday'}
-        ]
-        time_range_style = {'display': 'none'}
-        day_slider_style = {'width': '70%', 'margin-bottom': '20px'}
+def update_temp_chart(selected_chart):
+    if selected_chart == 'temperature':
+        return temp_fig
+    elif selected_chart == 'humidity':
+        return humidity_fig
+    elif selected_chart == 'wind':
+        return wind_fig
 
-    return options, options[0]['value'], time_range_style, day_slider_style
-
-# Callback to update chart based on selected view, time range, and day slider
+# Callback to update the geospatial map
 @app.callback(
-    Output('dynamic_chart_container', 'children'),
-    Input('view_selector', 'value'),
-    Input('time_range', 'value'),
+    Output('geospatial_map_chart', 'figure'),
     Input('day_slider', 'value')
 )
-def update_graph(view_selector, time_range, day_slider_value):
-    # Check which view is selected
-    if view_selector == 'geospatial_map':
-        # Calculate date for the selected day in the last 30 days
-        selected_date = df['date'].max().normalize() - pd.Timedelta(days=day_slider_value)
-        geospatial_map_fig = create_geospatial_map(df, rainfall_df, selected_date)
-        return dcc.Graph(id='geospatial_map_chart', figure=geospatial_map_fig)
+def update_geospatial_map(day_slider_value):
+    # Selected date for the geospatial map
+    selected_date = df['date'].max().normalize() - pd.Timedelta(days=day_slider_value)
     
-    elif view_selector == 'trends':
-        temp_fig, humidity_fig, wind_fig = create_temp_trend_charts(df, time_range)
-        return html.Div([
-            dcc.Graph(id='temp_trend_chart', figure=temp_fig),
-            dcc.Graph(id='humidity_trend_chart', figure=humidity_fig),
-            dcc.Graph(id='wind_trend_chart', figure=wind_fig)
-        ])
+    # Generate the figure for the geospatial map
+    geospatial_map_fig = create_geospatial_map(df, rainfall_df, selected_date)
     
-    elif view_selector == 'wind_rose':
-        wind_rose_fig = create_wind_rose_chart(df, time_range)
-        return dcc.Graph(id='wind_rose_chart', figure=wind_rose_fig)
-    
-    elif view_selector == 'scatter_matrix':
-        scatter_matrix_fig = create_scatter_matrix(df, time_range)
-        return dcc.Graph(id='scatter_matrix_chart', figure=scatter_matrix_fig)
-    
-    elif view_selector == 'stream_graph':
-        stream_graph_fig = create_streamgraph(df, time_range)
-        return dcc.Graph(id='stream_graph_chart', figure=stream_graph_fig)
-    
-    elif view_selector == 'bubble_timeline':
-        bubble_timeline_fig = create_bubble_timeline(df, time_range)
-        return dcc.Graph(id='bubble_timeline_chart', figure=bubble_timeline_fig)
+    # Return the geospatial map figure
+    return geospatial_map_fig
 
 # Run the app
 if __name__ == '__main__':
