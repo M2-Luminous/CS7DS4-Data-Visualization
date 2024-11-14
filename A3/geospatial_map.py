@@ -88,7 +88,7 @@ def create_geospatial_map(df, rainfall_df, selected_date):
             center=dict(lat=1.3521, lon=103.8198),
             zoom=10.5,
         ),
-        margin=dict(t=30, b=30, l=0, r=0),
+        margin=dict(t=10, b=10, l=0, r=0),
         legend=dict(orientation="h", yanchor="bottom", y=0.9, xanchor="center", x=0.1)
     )
 

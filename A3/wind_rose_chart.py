@@ -2,16 +2,13 @@
 import pandas as pd
 import plotly.graph_objs as go
 
-def create_wind_rose_chart(df, time_range):
+def create_wind_rose_chart(df, time_range, title):
     # Filter the dataset based on time range
-    if time_range == 'week1':
-        filtered_df = df[df['date'] >= df['date'].max() - pd.Timedelta(weeks=1)]
-    elif time_range == 'week2':
-        filtered_df = df[(df['date'] >= df['date'].max() - pd.Timedelta(weeks=2)) &
-                         (df['date'] < df['date'].max() - pd.Timedelta(weeks=1))]
-    elif time_range == 'week3':
-        filtered_df = df[(df['date'] >= df['date'].max() - pd.Timedelta(weeks=3)) &
-                         (df['date'] < df['date'].max() - pd.Timedelta(weeks=2))]
+    if time_range == 'month1':
+        filtered_df = df[df['date'] >= df['date'].max() - pd.Timedelta(days=30)]
+    elif time_range == 'month2':
+        filtered_df = df[(df['date'] >= df['date'].max() - pd.Timedelta(days=60)) & 
+                         (df['date'] < df['date'].max() - pd.Timedelta(days=30))]
     else:
         filtered_df = df  # Full dataset
 
@@ -39,11 +36,28 @@ def create_wind_rose_chart(df, time_range):
         hovertemplate='Wind Direction: %{theta}<br>High Wind Speed: %{r} km/h<extra></extra>'
     )
     
+    # Layout with dynamic title
     wind_rose_layout = go.Layout(
-        title='Wind Speed and Direction (Wind Rose Chart)',
+        title=dict(
+            text=title,
+            font=dict(size=15)  # Adjust title font size if needed
+        ),
         polar=dict(
-            radialaxis=dict(range=[0, max(wind_speed_high.max(), wind_speed_low.max())],
-                            visible=True, title=dict(text='Wind Speed (km/h)'), tickfont=dict(size=8))
+            radialaxis=dict(
+                range=[0, max(wind_speed_high.max(), wind_speed_low.max())],
+                visible=True,
+                title=dict(
+                    text='Wind Speed (km/h)',
+                    font=dict(size=10)
+                ),
+                tickfont=dict(size=8)
+            ),
+            angularaxis=dict(
+                tickfont=dict(size=8)
+            )
+        ),
+        legend=dict(
+            font=dict(size=10)
         ),
         showlegend=True
     )

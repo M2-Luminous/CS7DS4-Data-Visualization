@@ -3,6 +3,9 @@ from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from geospatial_map import create_geospatial_map
 from temp_chart import create_temp_trend_charts
+from wind_rose_chart import create_wind_rose_chart
+from stream_graph import create_streamgraph  
+from pie_charts import create_pie_charts     
 
 # Load datasets
 df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/weather_forecast_data_realtime.csv')
@@ -16,10 +19,19 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 # Create the initial figures for the temp, humidity, and wind charts
 temp_fig, humidity_fig, wind_fig = create_temp_trend_charts(df)
 
+# Create the wind rose charts for the first and second month
+wind_rose_fig1 = create_wind_rose_chart(df, 'month1', title="Latest Month Wind")
+wind_rose_fig2 = create_wind_rose_chart(df, 'month2', title="2nd Latest Month Wind")
+
+# Create the stream graph
+stream_fig = create_streamgraph(df)
+
+# Create the pie charts for forecast type and wind direction
+forecast_pie_chart, wind_direction_pie_chart = create_pie_charts(df)
+
 # Layout of the app
 app.layout = dbc.Container([
-    # html.H1("Singapore Weather Dashboard", style={'textAlign': 'center'}),
-    
+    html.H1("Singapore Weather Dashboard"),
     # Dropdown menu for selecting the chart type
     dbc.Row([
         dbc.Col([
@@ -32,40 +44,48 @@ app.layout = dbc.Container([
                 ],
                 value='temperature',  # Default selection
                 clearable=False,
-                style={'width': '50%'}  # Adjust width or position as needed
+                style={'width': '50%'}
             )
         ], width=6)
-    ], style={'margin-top': '10px'}),  # Reduce margin-top to bring it closer to H1 title
+    ], style={'margin-top': '10px'}),
     
-    # Placeholder for the selected chart
     dbc.Row([
+        # Left column containing temp chart, day slider, and geospatial map
         dbc.Col([
-            dcc.Graph(id='temp_trend_chart', figure=temp_fig)  # Display the initial temperature chart
-        ], width=6)
-    ], style={'margin-top': '0px', 'height': '60vh'}),  # Reduce margin-top to shift it higher
-
-    # Day slider positioned above the geospatial map
-    dbc.Row([
+            dcc.Graph(id='temp_trend_chart', figure=temp_fig),
+            dbc.Col([
+                dcc.Slider(
+                    id='day_slider',
+                    min=0,
+                    max=29,
+                    value=0,
+                    step=1,
+                    included=False,
+                    updatemode='drag',
+                    tooltip={"placement": "bottom", "always_visible": True}
+                )
+            ], style={'margin-top': '20px', 'margin-bottom': '10px'}),
+            dcc.Graph(id='geospatial_map_chart')
+        ], width=6, style={'height': '100vh'}),
+        
+        # Right column containing two wind rose charts, stream graph, and pie charts
         dbc.Col([
-            dcc.Slider(
-                id='day_slider',
-                min=0,
-                max=29,
-                value=0,
-                step=1,
-                included=False,
-                updatemode='drag',
-                tooltip={"placement": "bottom", "always_visible": True}
-            ),
-        ], width=6, style={'margin-bottom': '0px'})  # Slightly increase margin-bottom to bring it closer to the map
-    ], style={'margin-top': '0px'}),  # Reduce margin-top to bring it closer to temp chart
-    
-    # Geospatial map positioned at the bottom left
-    dbc.Row([
-        dbc.Col([
-            dcc.Graph(id='geospatial_map_chart'),
-        ], width=6)
-    ], style={'height': '50vh'})  # Adjust height as needed for the map
+            dbc.Row([
+                dbc.Col(dcc.Graph(id='wind_rose_chart1', figure=wind_rose_fig1), width=6),
+                dbc.Col(dcc.Graph(id='wind_rose_chart2', figure=wind_rose_fig2), width=6)
+            ]),
+            # Stream graph below wind rose charts
+            dbc.Row([
+                dbc.Col(dcc.Graph(id='stream_graph', figure=stream_fig), width=12)
+            ], style={'margin-top': '0px'}),  # Adjust margin to position stream graph as needed
+            
+            # New row for pie charts below stream graph
+            dbc.Row([
+                dbc.Col(dcc.Graph(id='forecast_pie_chart', figure=forecast_pie_chart), width=6),
+                dbc.Col(dcc.Graph(id='wind_direction_pie_chart', figure=wind_direction_pie_chart), width=6)
+            ], style={'margin-top': '20px'})  # Add margin for spacing
+        ], style={'height': '100vh'})
+    ])
 ], fluid=True)
 
 # Callback to update the displayed trend chart based on dropdown selection

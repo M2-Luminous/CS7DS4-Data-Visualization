@@ -2,18 +2,11 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-def create_streamgraph(df, time_range):
-    # Get the most recent date in the dataset for filtering
+def create_streamgraph(df):
+    # Filter dataset to only the last 30 days
     max_date = df['date'].max()
-    
-    # Filter the dataset based on the selected time range
-    if time_range == 'month':
-        filtered_df = df[df['date'] >= (max_date - pd.DateOffset(months=1))]
-    elif time_range == 'year':
-        filtered_df = df[df['date'] >= (max_date - pd.DateOffset(years=1))]
-    else:
-        filtered_df = df  # Use the full dataset by default
-    
+    filtered_df = df[df['date'] >= (max_date - pd.DateOffset(days=60))]
+
     # Calculate average values grouped by forecast type
     avg_df = filtered_df.groupby('forecast').agg({
         'humidity_high': 'mean',
@@ -26,7 +19,7 @@ def create_streamgraph(df, time_range):
     if avg_df.shape[0] == 1:
         avg_df = pd.concat([avg_df, avg_df])  # Duplicate row if only one forecast type
 
-    # Create figure with dual y-axes in black
+    # Create figure with dual y-axes
     fig = go.Figure()
 
     # Add traces for humidity (left y-axis)
@@ -67,9 +60,9 @@ def create_streamgraph(df, time_range):
         yaxis='y2'
     ))
 
-    # Configure layout with dual y-axes
+    # Configure layout with dual y-axes and smaller height
     fig.update_layout(
-        title="Average Humidity and Wind Speed by Forecast Type",
+        title="Average Humidity and Wind Speed by Forecast Type for Past 60 Days",
         xaxis_title="Forecast Type",
         yaxis=dict(
             title="Average Humidity",
@@ -81,12 +74,10 @@ def create_streamgraph(df, time_range):
             overlaying='y',
             side='right'
         ),
-        height=500,
-        width=1500,
+        height=300,  # Reduced height
         legend_title_text='Metrics',
-        legend=dict(
-            x=1.1
-        ),
+        legend=dict(x=1.1,y=1),
+        font=dict(size=10),
         hovermode="x unified"
     )
 
