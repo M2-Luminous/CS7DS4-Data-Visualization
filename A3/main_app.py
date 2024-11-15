@@ -29,10 +29,12 @@ stream_fig = create_streamgraph(df)
 # Create the pie charts for forecast type and wind direction
 forecast_pie_chart, wind_direction_pie_chart = create_pie_charts(df)
 
-# Layout of the app
+# Layout for main_app_1
 app.layout = dbc.Container([
+    dcc.Location(id='url', refresh=False),  # Tracks the URL
     html.H1("Singapore Weather Dashboard"),
-    # Dropdown menu for selecting the chart type
+    
+    # Dropdown menu and navigation button in the same row
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
@@ -44,7 +46,15 @@ app.layout = dbc.Container([
                 ],
                 value='temperature',  # Default selection
                 clearable=False,
-                style={'width': '50%'}
+                style={'width': '50%'}  # Full width of the column
+            )
+        ], width=6),
+        dbc.Col([
+            dbc.Button(
+                "Go to Scatter Matrix and Bubble Timeline",
+                id="navigate-button",
+                n_clicks=0,
+                style={'width': '50%'}  # Match the dropdown width
             )
         ], width=6)
     ], style={'margin-top': '10px'}),
@@ -115,6 +125,16 @@ def update_geospatial_map(day_slider_value):
     
     # Return the geospatial map figure
     return geospatial_map_fig
+
+# Callback to navigate to main_app_2
+@app.callback(
+    Output('url', 'pathname'),
+    Input('navigate-button', 'n_clicks')
+)
+def navigate_to_app2(n_clicks):
+    if n_clicks > 0:
+        return '/app2'
+    return '/'
 
 # Run the app
 if __name__ == '__main__':
