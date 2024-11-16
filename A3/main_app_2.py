@@ -1,11 +1,15 @@
 import pandas as pd
+import os
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from scatter_matrix import create_scatter_matrix
 from bubble_timeline import create_bubble_timeline
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 # Load dataset
-df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/weather_forecast_data_realtime.csv')
+df = pd.read_csv('../A3/weather_forecast_data_realtime.csv')
 df['date'] = pd.to_datetime(df['date'])
 
 # Initialize the app

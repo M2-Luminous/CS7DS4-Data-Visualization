@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from dash import Dash, dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 from geospatial_map import create_geospatial_map
@@ -7,10 +8,13 @@ from wind_rose_chart import create_wind_rose_chart
 from stream_graph import create_streamgraph  
 from pie_charts import create_pie_charts     
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 # Load datasets
-df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/weather_forecast_data_realtime.csv')
+df = pd.read_csv('../A3/weather_forecast_data_realtime.csv')
+rainfall_df = pd.read_csv('../A3/max_rainfall.csv')
 df['date'] = pd.to_datetime(df['date'])
-rainfall_df = pd.read_csv('C:/Users/M2-Winterfell/Downloads/CS7DS4-Data-Visualization/A3/max_rainfall.csv')
 rainfall_df['date'] = pd.to_datetime(rainfall_df['date'])
 
 # Initialize the app
