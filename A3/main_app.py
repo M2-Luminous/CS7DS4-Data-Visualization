@@ -138,4 +138,4 @@ def navigate_to_app2(n_clicks):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8050)
